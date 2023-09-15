@@ -1,0 +1,13 @@
+[package]
+name = "plonky_block_proof_gen"
+description = "Generates block proofs from zero proof IR."
+version = "0.1.0"
+authors = ["Polygon Zero <bgluth@polygon.technology>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ethereum-types = "0.14.1"
+plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", rev = "0b5ac312c0f9efdcc6d85c10256d2843d42215a2" }
+plonky2_evm = { git = "https://github.com/mir-protocol/plonky2.git", rev = "0b5ac312c0f9efdcc6d85c10256d2843d42215a2" }
+serde = "1.0.166"
