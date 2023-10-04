@@ -1,13 +1,47 @@
-use std::{borrow::Borrow, collections::HashMap};
+use std::{
+    borrow::Borrow,
+    collections::HashMap,
+    fmt::{self, Display, Formatter},
+    iter::once,
+};
 
+use eth_trie_utils::{
+    nibbles::Nibbles,
+    partial_trie::{HashedPartialTrie, PartialTrie},
+    trie_subsets::create_trie_subset,
+};
 use ethereum_types::{H256, U256};
 use plonky2_evm::{
     generation::{GenerationInputs, TrieInputs},
     proof::{BlockHashes, BlockMetadata, ExtraBlockData, TrieRoots},
 };
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::types::{BlockHeight, PlonkyProofIntern, ProofUnderlyingTxns, TxnIdx};
+
+pub type DummyProofIRResult<T> = Result<T, DummyProofIRError>;
+
+#[derive(Error, Debug)]
+pub enum DummyProofIRError {
+    #[error("Unable to find key {1} in trie containing keys {0:?} for trie type {2}")]
+    NonexistentTxnIndexForTrie(Vec<Nibbles>, TxnIdx, TrieType),
+}
+
+#[derive(Debug)]
+pub enum TrieType {
+    Txn,
+    Receipt,
+}
+
+impl Display for TrieType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            TrieType::Txn => write!(f, "transaction"),
+            TrieType::Receipt => write!(f, "receipt"),
+        }
+    }
+}
 
 /// Data that is specific to a block and is constant for all txns in a given
 /// block.
@@ -80,28 +114,81 @@ impl TxnProofGenIR {
     ///
     /// These can be used to pad a block if the number of transactions in the
     /// block is below `2`.
-    pub fn create_dummy(b_height: BlockHeight, txn_idx: TxnIdx) -> Self {
-        Self {
+    pub fn create_dummy(
+        b_height: BlockHeight,
+        txn_idx: TxnIdx,
+        receipts_trie: &HashedPartialTrie,
+        transactions_trie: &HashedPartialTrie,
+    ) -> DummyProofIRResult<Self> {
+        // TODO: Remove cast once `eth_trie_utils` get an update...
+        let receipt_sub_partial_trie =
+            Self::create_trie_subset_dummy_txn(receipts_trie, txn_idx, TrieType::Receipt)?;
+        let txn_sub_partial_trie =
+            Self::create_trie_subset_dummy_txn(transactions_trie, txn_idx, TrieType::Txn)?;
+
+        let trie_roots_after = TrieRoots {
+            transactions_root: txn_sub_partial_trie.hash(),
+            receipts_root: receipt_sub_partial_trie.hash(),
+            ..Default::default()
+        };
+
+        let tries = TrieInputs {
+            transactions_trie: txn_sub_partial_trie,
+            receipts_trie: receipt_sub_partial_trie,
+            ..Default::default()
+        };
+
+        Ok(Self {
             signed_txn: Default::default(),
-            tries: Default::default(),
-            trie_roots_after: Default::default(),
+            tries,
+            trie_roots_after,
             deltas: Default::default(),
             contract_code: Default::default(),
             b_height,
             txn_idx,
-        }
+        })
     }
 
-    /// Copy relevant fields of the `TxnProofGenIR` to a new `TxnProofGenIR`
-    /// with a different `b_height` and `txn_idx`.
+    fn create_trie_subset_dummy_txn(
+        trie: &HashedPartialTrie,
+        txn_idx: usize,
+        trie_type: TrieType,
+    ) -> DummyProofIRResult<HashedPartialTrie> {
+        create_trie_subset(trie, once(txn_idx as u64)).map_err(|_| {
+            DummyProofIRError::NonexistentTxnIndexForTrie(trie.keys().collect(), txn_idx, trie_type)
+        })
+    }
+
+    /// Creates a dummy txn that appears right after a non-dummy txn.
     ///
-    /// This can be used to pad a block if there is only one transaction in the
-    /// block. Block proofs need a minimum of two transactions.
-    pub fn dummy_with_at(&self, b_height: BlockHeight, txn_idx: TxnIdx) -> Self {
-        let mut dummy = Self::create_dummy(b_height, txn_idx);
-        dummy.deltas = self.deltas.clone();
-        dummy.trie_roots_after = self.trie_roots_after.clone();
-        dummy
+    /// This will only occur when a block has exactly `1` txn inside it. In this
+    /// special case, the dummy txn needs some information from the previous
+    /// txn. Block proofs need a minimum of two transactions.
+    pub fn create_dummy_following_real_txn(
+        b_height: BlockHeight,
+        txn_idx: TxnIdx,
+        receipts_trie: &HashedPartialTrie,
+        transactions_trie: &HashedPartialTrie,
+        prev_real_txn: &TxnProofGenIR,
+    ) -> DummyProofIRResult<Self> {
+        let mut dummy = Self::create_dummy(b_height, txn_idx, receipts_trie, transactions_trie)?;
+
+        let deltas = ProofBeforeAndAfterDeltas {
+            gas_used_before: prev_real_txn.deltas.gas_used_after,
+            gas_used_after: prev_real_txn.deltas.gas_used_after,
+            block_bloom_before: prev_real_txn.deltas.block_bloom_after,
+            block_bloom_after: prev_real_txn.deltas.block_bloom_after,
+        };
+
+        let trie_roots_after = TrieRoots {
+            state_root: prev_real_txn.trie_roots_after.state_root,
+            ..dummy.trie_roots_after
+        };
+
+        dummy.deltas = deltas;
+        dummy.trie_roots_after = trie_roots_after;
+
+        Ok(dummy)
     }
 }
 
