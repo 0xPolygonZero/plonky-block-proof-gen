@@ -92,6 +92,30 @@ impl TxnProofGenIR {
         }
     }
 
+    /// Creates a dummy txn that appears right after a non-dummy txn.
+    ///
+    /// This will only occur when a block has exactly `1` txn inside it. In this
+    /// special case, the dummy txn needs some information from the previous
+    /// txn.
+    pub fn create_dummy_following_real_txn(
+        prev_real_txn: &TxnProofGenIR,
+        b_height: BlockHeight,
+        txn_idx: TxnIdx,
+    ) -> Self {
+        let deltas = ProofBeforeAndAfterDeltas {
+            gas_used_before: prev_real_txn.deltas.gas_used_after,
+            gas_used_after: prev_real_txn.deltas.gas_used_after,
+            block_bloom_before: prev_real_txn.deltas.block_bloom_after,
+            block_bloom_after: prev_real_txn.deltas.block_bloom_after,
+        };
+
+        let mut dummy_txn = Self::create_dummy(b_height, txn_idx);
+        dummy_txn.trie_roots_after = prev_real_txn.trie_roots_after.clone();
+        dummy_txn.deltas = deltas;
+
+        dummy_txn
+    }
+
     /// Clone the `TxnProofGenIR` to a new `TxnProofGenIR` with a different
     /// `b_height` and `txn_idx`.
     ///
