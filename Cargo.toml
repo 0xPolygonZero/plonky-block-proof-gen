@@ -10,6 +10,6 @@ license = "MIT OR Apache-2.0"
 ethereum-types = "0.14.1"
 log = "0.4.1"
 paste = "1.0.14"
-plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", rev = "0b5ac312c0f9efdcc6d85c10256d2843d42215a2" }
-plonky2_evm = { git = "https://github.com/mir-protocol/plonky2.git", rev = "0b5ac312c0f9efdcc6d85c10256d2843d42215a2" }
+plonky2 = { git = "https://github.com/mir-protocol/plonky2.git", rev = "762e6f07b834df04be8cd290f07465a28c392c6d" }
+plonky2_evm = { git = "https://github.com/mir-protocol/plonky2.git", rev = "762e6f07b834df04be8cd290f07465a28c392c6d" }
 serde = "1.0.166"
