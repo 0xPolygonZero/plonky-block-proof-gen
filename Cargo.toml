@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 ethereum-types = "0.14.1"
 log = "0.4.1"
 paste = "1.0.14"
-plonky2 = { git = "https://github.com/0xPolygonZero/plonky2.git", rev = "47e24306b7dc224383712a6700986331615f3e2a" }
-plonky2_evm = { git = "https://github.com/0xPolygonZero/plonky2.git", rev = "47e24306b7dc224383712a6700986331615f3e2a" }
-proof_protocol_decoder = { git = "https://github.com/0xPolygonZero/proof-protocol-decoder.git", rev = "b049f0dab1f832fcbd147e9b4c08648d7fa3a8f0" }
+plonky2 = { git = "https://github.com/0xPolygonZero/plonky2.git", rev = "7efd147e0888c5c6754a4d7ee2691a2ff5c82072" }
+plonky2_evm = { git = "https://github.com/0xPolygonZero/plonky2.git", rev = "7efd147e0888c5c6754a4d7ee2691a2ff5c82072" }
+proof_protocol_decoder = { git = "https://github.com/0xPolygonZero/proof-protocol-decoder.git", rev = "594e88e1af62b679e6919d7b804a38441fa26a59" }
 serde = "1.0.166"
