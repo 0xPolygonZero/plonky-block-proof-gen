@@ -2,9 +2,14 @@
 
 Library for generating proofs from proof IR.
 
-For the time being, the only library that produces proof IR is currently [plonky-edge-block-trace-parser](https://github.com/0xPolygonZero/plonky-edge-block-trace-parser). Down the road, the IR will be produced by decoding the proof gen protocol.
+# DEPRECATION NOTICE
+
+The content of this project has been merged into [0xPolygonZero/proof-protocol-decoder](https://github.com/0xPolygonZero/proof-protocol-decoder).
+This repository is hence deprecated and archived.
 
 # General Usage (Extremely rough, will change)
+
+For the time being, the only library that produces proof IR is currently [plonky-edge-block-trace-parser](https://github.com/0xPolygonZero/plonky-edge-block-trace-parser). Down the road, the IR will be produced by decoding the proof gen protocol.
 
 In [proof_gen.rs](https://github.com/0xPolygonZero/plonky-block-proof-gen/blob/main/src/proof_gen.rs), there are three core functions:
 
